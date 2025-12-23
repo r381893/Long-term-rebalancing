@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 三策略比較系統</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Inter:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #e94560, #00d26a, #4a9fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
+        /* 參數區 */
+        .params-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .params-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .param-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .param-group label {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .param-group input,
+        .param-group select {
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .param-group input:focus,
+        .param-group select:focus {
+            outline: none;
+            border-color: #4a9fff;
+            box-shadow: 0 0 0 3px rgba(74, 159, 255, 0.2);
+        }
+
+        .run-btn {
+            background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 20px auto 0;
+            font-family: inherit;
+        }
+
+        .run-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+        }
+
+        /* 策略卡片 */
+        .strategies-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .strategy-card {
+            border-radius: 20px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .strategy-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+        }
+
+        .card-spider {
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.15) 0%, rgba(233, 69, 96, 0.05) 100%);
+            border: 1px solid rgba(233, 69, 96, 0.3);
+        }
+
+        .card-spider::before {
+            background: #e94560;
+        }
+
+        .card-forever {
+            background: linear-gradient(135deg, rgba(0, 210, 106, 0.15) 0%, rgba(0, 210, 106, 0.05) 100%);
+            border: 1px solid rgba(0, 210, 106, 0.3);
+        }
+
+        .card-forever::before {
+            background: #00d26a;
+        }
+
+        .card-buyhold {
+            background: linear-gradient(135deg, rgba(74, 159, 255, 0.15) 0%, rgba(74, 159, 255, 0.05) 100%);
+            border: 1px solid rgba(74, 159, 255, 0.3);
+        }
+
+        .card-buyhold::before {
+            background: #4a9fff;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .card-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .metric {
+            margin-bottom: 15px;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .metric-value.positive {
+            color: #00d26a;
+        }
+
+        .metric-value.negative {
+            color: #e94560;
+        }
+
+        .metric-value.neutral {
+            color: #4a9fff;
+        }
+
+        .card-footer {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* 圖表區 */
+        .chart-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        #chart {
+            width: 100%;
+            height: 450px;
+        }
+
+        /* 表格 */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 1rem;
+        }
+
+        th,
+        td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        td {
+            font-weight: 500;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+            color: #888;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #e94560;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 說明區 */
+        .info-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-card h4 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .info-card p {
+            color: #888;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 900px) {
+            .strategies-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .info-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #aaa;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+            border-color: #e94560;
+            color: white;
+        }
+
+        .trade-stats {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            color: #aaa;
+        }
+
+        .trade-stats strong {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 三策略比較系統</h1>
+            <p class="subtitle">蜘蛛網 vs 永遠做多 vs 買進持有</p>
+        </header>
+
+        <!-- 參數設定 -->
+        <section class="params-section">
+            <div class="params-grid">
+                <div class="param-group">
+                    <label>初始資金</label>
+                    <input type="number" id="capital" value="1000000" step="100000">
+                </div>
+                <div class="param-group">
+                    <label>逆價差補償 (%/年)</label>
+                    <input type="number" id="backwardation" value="4" step="0.5" min="0" max="8">
+                </div>
+                <div class="param-group">
+                    <label>🕸️ 蜘蛛網 f 值</label>
+                    <input type="number" id="spider_f" value="0.5" step="0.1" min="0.1" max="1.0">
+                </div>
+                <div class="param-group">
+                    <label>📈 永遠做多槓桿</label>
+                    <input type="number" id="forever_f" value="3.0" step="0.5" min="1.0" max="5.0">
+                </div>
+                <div class="param-group">
+                    <label>🏦 買進持有初始槓桿</label>
+                    <input type="number" id="buyhold_f" value="3.0" step="0.5" min="1.0" max="5.0">
+                </div>
+            </div>
+            <button class="run-btn" onclick="runBacktest()">🚀 執行比較回測</button>
+        </section>
+
+        <!-- 載入中 -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>計算中，請稍候...</p>
+        </div>
+
+        <!-- 結果區 -->
+        <div id="results" style="display: none;">
+            <!-- 策略卡片 -->
+            <div class="strategies-grid">
+                <div class="strategy-card card-spider">
+                    <div class="card-header">
+                        <span class="card-icon">🕸️</span>
+                        <div>
+                            <div class="card-title">蜘蛛網</div>
+                            <div class="card-subtitle">跌買漲賣</div>
+                        </div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">總報酬率</div>
+                        <div class="metric-value positive" id="spider-return">+107.05%</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">最終資金</div>
+                        <div class="metric-value neutral" id="spider-capital">$2,070,491</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">最大回撤 (MDD)</div>
+                        <div class="metric-value negative" id="spider-mdd">14.22%</div>
+                    </div>
+                    <div class="card-footer" id="spider-params">f=0.5, 每日再平衡</div>
+                </div>
+
+                <div class="strategy-card card-forever">
+                    <div class="card-header">
+                        <span class="card-icon">📈</span>
+                        <div>
+                            <div class="card-title">永遠做多</div>
+                            <div class="card-subtitle">再平衡維持槓桿</div>
+                        </div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">總報酬率</div>
+                        <div class="metric-value positive" id="forever-return">+3746.99%</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">最終資金</div>
+                        <div class="metric-value neutral" id="forever-capital">$38,469,888</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">最大回撤 (MDD)</div>
+                        <div class="metric-value negative" id="forever-mdd">73.75%</div>
+                    </div>
+                    <div class="card-footer" id="forever-params">f=3.0, 每月再平衡</div>
+                </div>
+
+                <div class="strategy-card card-buyhold">
+                    <div class="card-header">
+                        <span class="card-icon">🏦</span>
+                        <div>
+                            <div class="card-title">買進持有</div>
+                            <div class="card-subtitle">不再平衡</div>
+                        </div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">總報酬率</div>
+                        <div class="metric-value positive" id="buyhold-return">+780.42%</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">最終資金</div>
+                        <div class="metric-value neutral" id="buyhold-capital">$8,804,186</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">最大回撤 (MDD)</div>
+                        <div class="metric-value negative" id="buyhold-mdd">62.16%</div>
+                    </div>
+                    <div class="card-footer" id="buyhold-params">初始 3.0x 槓桿</div>
+                </div>
+            </div>
+
+            <!-- 圖表 -->
+            <section class="chart-section">
+                <h3 class="chart-title">📈 資產曲線比較</h3>
+                <div id="chart"></div>
+            </section>
+
+            <!-- 詳細表格 -->
+            <section class="chart-section">
+                <h3 class="chart-title">📋 詳細比較表</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>策略</th>
+                                <th>槓桿</th>
+                                <th>再平衡</th>
+                                <th>總報酬率</th>
+                                <th>年化報酬</th>
+                                <th>MDD</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparison-table">
+                            <tr>
+                                <td>🕸️ 蜘蛛網</td>
+                                <td>0.5x</td>
+                                <td>每日</td>
+                                <td style="color: #00d26a;">+107.05%</td>
+                                <td>7.12%</td>
+                                <td style="color: #e94560;">14.22%</td>
+                            </tr>
+                            <tr>
+                                <td>📈 永遠做多</td>
+                                <td>3.0x</td>
+                                <td>每月</td>
+                                <td style="color: #00d26a;">+3746.99%</td>
+                                <td>41.20%</td>
+                                <td style="color: #e94560;">73.75%</td>
+                            </tr>
+                            <tr>
+                                <td>🏦 買進持有</td>
+                                <td>3.0x (初始)</td>
+                                <td>不再平衡</td>
+                                <td style="color: #00d26a;">+780.42%</td>
+                                <td>24.15%</td>
+                                <td style="color: #e94560;">62.16%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 交易明細區 -->
+            <section class="chart-section">
+                <h3 class="chart-title">📝 交易明細記錄</h3>
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="showTradeTab('spider', this)">🕸️ 蜘蛛網</button>
+                    <button class="tab-btn" onclick="showTradeTab('forever', this)">📈 永遠做多</button>
+                    <button class="tab-btn" onclick="showTradeTab('buyhold', this)">🏦 買進持有</button>
+                </div>
+                <div class="trade-stats" id="trade-stats">
+                    <span>總交易次數: <strong id="stat-trades">0</strong></span>
+                    <span>累計買進: <strong id="stat-buy">0</strong> 口</span>
+                    <span>累計賣出: <strong id="stat-sell">0</strong> 口</span>
+                </div>
+                <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                    <table id="trade-detail-table">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>價格</th>
+                                <th>部位</th>
+                                <th>買賣</th>
+                                <th>資金</th>
+                                <th>進出邏輯</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trade-detail-body">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #888;">請先執行回測</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- 說明區 -->
+        <section class="info-section">
+            <div class="info-card">
+                <h4>🕸️ 蜘蛛網策略</h4>
+                <p>• f < 1: 跌買漲賣<br>
+                        • 下跌時買進，上漲時賣出<br>
+                        • 收割價格波動的正期望報酬<br>
+                        • 適合震盪市場</p>
+            </div>
+            <div class="info-card">
+                <h4>📈 永遠做多</h4>
+                <p>• 維持固定槓桿<br>
+                    • 定期再平衡維持目標槓桿<br>
+                    • 上漲時加碼，下跌時減碼<br>
+                    • 適合趨勢市場</p>
+            </div>
+            <div class="info-card">
+                <h4>🏦 買進持有</h4>
+                <p>• 初始槓桿後不調整<br>
+                    • 槓桿會隨價格漂移<br>
+                    • 上漲後槓桿降低<br>
+                    • 最低交易成本</p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const API_URL = '/api/backtest';
+
+        async function runBacktest() {
+            // 顯示載入
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').style.display = 'none';
+
+            // 獲取參數
+            const params = {
+                capital: parseFloat(document.getElementById('capital').value),
+                backwardation: parseFloat(document.getElementById('backwardation').value),
+                spider_f: parseFloat(document.getElementById('spider_f').value),
+                forever_f: parseFloat(document.getElementById('forever_f').value),
+                buyhold_f: parseFloat(document.getElementById('buyhold_f').value),
+                contract_multiplier: 10  // 微台
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    updateUI(data);
+                } else {
+                    alert('回測錯誤: ' + data.error);
+                }
+            } catch (error) {
+                alert('無法連接 API，請確認後端已啟動 (python api.py)\n\n錯誤: ' + error.message);
+            }
+
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        function updateUI(data) {
+            // 更新蜘蛛網
+            document.getElementById('spider-return').textContent = formatPercent(data.spider.return);
+            document.getElementById('spider-capital').textContent = formatMoney(data.spider.final_capital);
+            document.getElementById('spider-mdd').textContent = formatPercent(data.spider.mdd, false);
+            document.getElementById('spider-params').textContent = data.spider.params;
+
+            // 更新永遠做多
+            document.getElementById('forever-return').textContent = formatPercent(data.forever.return);
+            document.getElementById('forever-capital').textContent = formatMoney(data.forever.final_capital);
+            document.getElementById('forever-mdd').textContent = formatPercent(data.forever.mdd, false);
+            document.getElementById('forever-params').textContent = data.forever.params;
+
+            // 更新買進持有
+            document.getElementById('buyhold-return').textContent = formatPercent(data.buyhold.return);
+            document.getElementById('buyhold-capital').textContent = formatMoney(data.buyhold.final_capital);
+            document.getElementById('buyhold-mdd').textContent = formatPercent(data.buyhold.mdd, false);
+            document.getElementById('buyhold-params').textContent = data.buyhold.params;
+
+            // 更新表格
+            updateTable(data);
+
+            // 更新圖表
+            const trace1 = {
+                x: data.spider.dates,
+                y: data.spider.capitals,
+                name: '🕸️ 蜘蛛網',
+                line: { color: '#e94560', width: 2 }
+            };
+
+            const trace2 = {
+                x: data.forever.dates,
+                y: data.forever.capitals,
+                name: '📈 永遠做多',
+                line: { color: '#00d26a', width: 2 }
+            };
+
+            const trace3 = {
+                x: data.buyhold.dates,
+                y: data.buyhold.capitals,
+                name: '🏦 買進持有',
+                line: { color: '#4a9fff', width: 2 }
+            };
+
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#888', family: 'Inter, sans-serif', size: 14 },
+                xaxis: { gridcolor: 'rgba(255,255,255,0.1)' },
+                yaxis: {
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    title: '資產價值',
+                    tickformat: ',.0f'
+                },
+                legend: {
+                    orientation: 'h',
+                    y: 1.1,
+                    font: { size: 14 }
+                },
+                margin: { t: 50, b: 50, l: 80, r: 30 }
+            };
+
+            Plotly.newPlot('chart', [trace1, trace2, trace3], layout, { responsive: true });
+
+            // 儲存交易明細並預設顯示蜘蛛網
+            currentTradeData = data;
+            showTradeTab('spider', document.querySelector('.tab-btn'));
+
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function updateTable(data) {
+            const tbody = document.getElementById('comparison-table');
+            const spider_f = document.getElementById('spider_f').value;
+            const forever_f = document.getElementById('forever_f').value;
+            const buyhold_f = document.getElementById('buyhold_f').value;
+
+            tbody.innerHTML = `
+                <tr>
+                    <td>🕸️ 蜘蛛網</td>
+                    <td>${spider_f}x</td>
+                    <td>每日</td>
+                    <td style="color: #00d26a;">${formatPercent(data.spider.return)}</td>
+                    <td>${formatPercent(data.spider.annual_return, false)}</td>
+                    <td style="color: #e94560;">${formatPercent(data.spider.mdd, false)}</td>
+                </tr>
+                <tr>
+                    <td>📈 永遠做多</td>
+                    <td>${forever_f}x</td>
+                    <td>每月</td>
+                    <td style="color: #00d26a;">${formatPercent(data.forever.return)}</td>
+                    <td>${formatPercent(data.forever.annual_return, false)}</td>
+                    <td style="color: #e94560;">${formatPercent(data.forever.mdd, false)}</td>
+                </tr>
+                <tr>
+                    <td>🏦 買進持有</td>
+                    <td>${buyhold_f}x (初始)</td>
+                    <td>不再平衡</td>
+                    <td style="color: #00d26a;">${formatPercent(data.buyhold.return)}</td>
+                    <td>${formatPercent(data.buyhold.annual_return, false)}</td>
+                    <td style="color: #e94560;">${formatPercent(data.buyhold.mdd, false)}</td>
+                </tr>
+            `;
+        }
+
+        function formatPercent(value, showPlus = true) {
+            const pct = (value * 100).toFixed(2);
+            return showPlus && value >= 0 ? `+${pct}%` : `${pct}%`;
+        }
+
+        function formatMoney(value) {
+            return '$' + Math.round(value).toLocaleString();
+        }
+
+        // 交易明細相關
+        let currentTradeData = null;
+
+        function showTradeTab(strategy, btn) {
+            // 更新 tab 狀態
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            if (!currentTradeData) return;
+
+            const data = currentTradeData[strategy];
+            if (!data) return;
+
+            // 更新統計
+            document.getElementById('stat-trades').textContent = data.total_trades.toLocaleString();
+            document.getElementById('stat-buy').textContent = data.total_buy.toLocaleString();
+            document.getElementById('stat-sell').textContent = data.total_sell.toLocaleString();
+
+            // 更新表格
+            const tbody = document.getElementById('trade-detail-body');
+            const details = data.trades_detail || [];
+
+            if (details.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">無交易記錄</td></tr>';
+                return;
+            }
+
+            // 只顯示最近50筆
+            const displayDetails = details.slice(-50).reverse();
+
+            tbody.innerHTML = displayDetails.map(t => `
+                <tr>
+                    <td>${t.date}</td>
+                    <td>${t.price.toLocaleString()}</td>
+                    <td>${t.volume.toLocaleString()}</td>
+                    <td style="color: ${t.trade > 0 ? '#00d26a' : '#e94560'};">${t.trade > 0 ? '+' + t.trade : t.trade}</td>
+                    <td>${t.capital.toLocaleString()}</td>
+                    <td style="font-size: 0.85rem; color: #888;">${t.reason || '-'}</td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+
+</html>
