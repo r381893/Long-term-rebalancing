@@ -1,6 +1,6 @@
 """
 📊 三策略比較系統 - Streamlit UI
-重建 dashboard.html 的精美介面
+完整重建 dashboard.html 的精美介面 (含交易明細)
 """
 
 import streamlit as st
@@ -19,7 +19,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Premium Dark Theme CSS (from dashboard.html)
+# Premium Dark Theme CSS (完整版 from dashboard.html)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Inter:wght@400;600;700&display=swap');
@@ -31,6 +31,7 @@ st.markdown("""
     
     /* 隱藏 Streamlit 預設元素 */
     #MainMenu, footer, header {visibility: hidden;}
+    .block-container { padding-top: 2rem !important; }
     
     /* 漸層標題 */
     .gradient-title {
@@ -68,6 +69,7 @@ st.markdown("""
         border-top: 5px solid #e94560 !important;
         border-radius: 20px !important;
         padding: 25px !important;
+        margin-bottom: 20px;
     }
     
     /* 策略卡片 - 永遠做多 (綠) */
@@ -77,6 +79,7 @@ st.markdown("""
         border-top: 5px solid #00d26a !important;
         border-radius: 20px !important;
         padding: 25px !important;
+        margin-bottom: 20px;
     }
     
     /* 策略卡片 - 買進持有 (藍) */
@@ -86,6 +89,7 @@ st.markdown("""
         border-top: 5px solid #4a9fff !important;
         border-radius: 20px !important;
         padding: 25px !important;
+        margin-bottom: 20px;
     }
     
     .card-icon { font-size: 2.5rem; }
@@ -115,6 +119,13 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
     
+    .chart-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 20px;
+    }
+    
     /* 按鈕樣式 */
     .stButton > button {
         background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%) !important;
@@ -141,12 +152,55 @@ st.markdown("""
         color: #fff !important;
     }
     
+    /* Tab 樣式 */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+        background: transparent;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 8px !important;
+        color: #aaa !important;
+        padding: 10px 20px !important;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%) !important;
+        border-color: #e94560 !important;
+        color: white !important;
+    }
+    
+    /* 表格樣式 */
+    .stDataFrame {
+        background: rgba(255, 255, 255, 0.02) !important;
+        border-radius: 10px !important;
+    }
+    
+    .stDataFrame th {
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: #aaa !important;
+    }
+    
+    /* 交易統計 */
+    .trade-stats {
+        display: flex;
+        gap: 30px;
+        margin-bottom: 15px;
+        font-size: 0.95rem;
+        color: #aaa;
+    }
+    
+    .trade-stats strong { color: #fff; }
+    
     /* 說明卡片 */
     .info-card {
         background: rgba(255, 255, 255, 0.03);
         border-radius: 15px;
         padding: 20px;
         border: 1px solid rgba(255, 255, 255, 0.1);
+        height: 100%;
     }
     
     .info-card h4 { font-size: 1.1rem; margin-bottom: 10px; color: #fff; }
@@ -154,6 +208,13 @@ st.markdown("""
     
     /* 隱藏側邊欄 */
     [data-testid="stSidebar"] { display: none; }
+    
+    /* Expander */
+    .streamlit-expanderHeader {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 10px !important;
+        color: #fff !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -330,7 +391,7 @@ if run_backtest or 'results' in st.session_state:
     
     # 圖表區
     st.markdown('<div class="chart-section">', unsafe_allow_html=True)
-    st.markdown("### 📈 資產曲線比較")
+    st.markdown('<h3 class="chart-title">📈 資產曲線比較</h3>', unsafe_allow_html=True)
     
     fig = go.Figure()
     
@@ -371,7 +432,7 @@ if run_backtest or 'results' in st.session_state:
     
     # 詳細比較表
     st.markdown('<div class="chart-section">', unsafe_allow_html=True)
-    st.markdown("### 📋 詳細比較表")
+    st.markdown('<h3 class="chart-title">📋 詳細比較表</h3>', unsafe_allow_html=True)
     
     compare_df = pd.DataFrame({
         "策略": ["🕸️ 蜘蛛網", "📈 永遠做多", "🏦 買進持有"],
@@ -383,6 +444,71 @@ if run_backtest or 'results' in st.session_state:
     })
     
     st.dataframe(compare_df, use_container_width=True, hide_index=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # 交易明細區
+    st.markdown('<div class="chart-section">', unsafe_allow_html=True)
+    st.markdown('<h3 class="chart-title">📝 交易明細記錄</h3>', unsafe_allow_html=True)
+    
+    # 用 Tabs 來切換不同策略
+    tab1, tab2, tab3 = st.tabs(["🕸️ 蜘蛛網", "📈 永遠做多", "🏦 買進持有"])
+    
+    def show_trade_details(result, strategy_name):
+        # 交易統計
+        st.markdown(f'''
+        <div class="trade-stats">
+            <span>總交易次數: <strong>{result.total_trades:,}</strong></span>
+            <span>累計買進: <strong>{result.total_buy_volume:,.0f}</strong> 口</span>
+            <span>累計賣出: <strong>{result.total_sell_volume:,.0f}</strong> 口</span>
+        </div>
+        ''', unsafe_allow_html=True)
+        
+        # 交易明細表格
+        trade_df = pd.DataFrame({
+            "日期": result.dates,
+            "價格": result.prices,
+            "部位": result.volumes,
+            "買賣": result.trades,
+            "進出邏輯": result.trade_reasons,
+            "資金": result.capitals
+        })
+        
+        # 只顯示有交易的日期
+        trade_df = trade_df[trade_df["買賣"].abs() > 0].copy()
+        trade_df["價格"] = trade_df["價格"].apply(lambda x: f"{x:,.0f}")
+        trade_df["部位"] = trade_df["部位"].apply(lambda x: f"{x:,.0f}")
+        trade_df["買賣"] = trade_df["買賣"].apply(lambda x: f"+{int(x)}" if x > 0 else str(int(x)))
+        trade_df["資金"] = trade_df["資金"].apply(lambda x: f"${x:,.0f}")
+        
+        # 顯示最近50筆
+        st.dataframe(trade_df.tail(50).iloc[::-1], use_container_width=True, hide_index=True, height=400)
+    
+    with tab1:
+        show_trade_details(r_spider, "蜘蛛網")
+    
+    with tab2:
+        show_trade_details(r_forever, "永遠做多")
+    
+    with tab3:
+        # 買進持有特殊處理
+        st.markdown(f'''
+        <div class="trade-stats">
+            <span>總交易次數: <strong>1</strong></span>
+            <span>累計買進: <strong>{r_buyhold.trades[0]:,.0f}</strong> 口</span>
+            <span>累計賣出: <strong>0</strong> 口</span>
+        </div>
+        ''', unsafe_allow_html=True)
+        
+        buyhold_df = pd.DataFrame({
+            "日期": [r_buyhold.dates[0]],
+            "價格": [f"{r_buyhold.prices[0]:,.0f}"],
+            "部位": [f"{r_buyhold.volumes[0]:,.0f}"],
+            "買賣": [f"+{int(r_buyhold.trades[0])}"],
+            "進出邏輯": ["初始建倉後不再調整 (買進持有)"],
+            "資金": [f"${initial_capital:,.0f}"]
+        })
+        st.dataframe(buyhold_df, use_container_width=True, hide_index=True)
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
 else:
