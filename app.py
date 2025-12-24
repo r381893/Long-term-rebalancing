@@ -1,8 +1,6 @@
 """
-蜘蛛網回測系統 - Streamlit UI
-Spider Web Backtest System
-
-基於凱利投資原理的固定槓桿再平衡策略回測
+📊 三策略比較系統 - Streamlit UI
+重建 dashboard.html 的精美介面
 """
 
 import streamlit as st
@@ -16,541 +14,412 @@ from backtest_engine import SpiderWebBacktest, BacktestResult
 
 # Page Config
 st.set_page_config(
-    page_title="🕸️ 蜘蛛網回測系統",
-    page_icon="🕸️",
+    page_title="📊 三策略比較系統",
+    page_icon="📊",
     layout="wide"
 )
 
-# Custom CSS - Premium Dark Theme (from dashboard.html)
+# Premium Dark Theme CSS (from dashboard.html)
 st.markdown("""
 <style>
-    /* 匯入 Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Inter:wght@400;600;700&display=swap');
     
-    /* 全域深色漸層背景 */
+    /* 全域深色背景 */
     .stApp {
         background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%) !important;
     }
     
-    /* 主標題漸層色 */
+    /* 隱藏 Streamlit 預設元素 */
+    #MainMenu, footer, header {visibility: hidden;}
+    
+    /* 漸層標題 */
     .gradient-title {
-        font-size: 2.5rem !important;
+        font-size: 2.8rem !important;
         font-weight: 700 !important;
         background: linear-gradient(90deg, #e94560, #00d26a, #4a9fff) !important;
         -webkit-background-clip: text !important;
         -webkit-text-fill-color: transparent !important;
         background-clip: text !important;
+        text-align: center !important;
+        margin-bottom: 5px !important;
     }
     
-    /* Glassmorphism 卡片樣式 */
-    [data-testid="stMetric"], .stMetric {
-        background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
-        border-radius: 15px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        padding: 20px !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    [data-testid="stMetric"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(233, 69, 96, 0.2);
-    }
-    
-    /* Metric 數值樣式 */
-    [data-testid="stMetricValue"] {
-        font-size: 1.8rem !important;
-        font-weight: 700 !important;
-        font-family: 'Inter', sans-serif !important;
-    }
-    
-    [data-testid="stMetricLabel"] {
-        font-size: 0.9rem !important;
+    .subtitle {
         color: #888 !important;
+        font-size: 1.2rem !important;
+        text-align: center !important;
+        margin-bottom: 30px !important;
     }
     
-    /* 正負值顏色 */
-    .positive { color: #00d26a !important; }
-    .negative { color: #ff4757 !important; }
-    
-    /* 側邊欄樣式 */
-    [data-testid="stSidebar"] {
-        background: rgba(15, 15, 26, 0.95) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+    /* 參數區毛玻璃效果 */
+    .params-section {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 20px !important;
+        padding: 25px !important;
+        margin-bottom: 30px !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
     
-    [data-testid="stSidebar"] .stMarkdown h2, 
-    [data-testid="stSidebar"] .stMarkdown h3 {
-        color: #fff !important;
+    /* 策略卡片 - 蜘蛛網 (紅) */
+    .card-spider {
+        background: linear-gradient(135deg, rgba(233, 69, 96, 0.15) 0%, rgba(233, 69, 96, 0.05) 100%) !important;
+        border: 1px solid rgba(233, 69, 96, 0.3) !important;
+        border-top: 5px solid #e94560 !important;
+        border-radius: 20px !important;
+        padding: 25px !important;
+    }
+    
+    /* 策略卡片 - 永遠做多 (綠) */
+    .card-forever {
+        background: linear-gradient(135deg, rgba(0, 210, 106, 0.15) 0%, rgba(0, 210, 106, 0.05) 100%) !important;
+        border: 1px solid rgba(0, 210, 106, 0.3) !important;
+        border-top: 5px solid #00d26a !important;
+        border-radius: 20px !important;
+        padding: 25px !important;
+    }
+    
+    /* 策略卡片 - 買進持有 (藍) */
+    .card-buyhold {
+        background: linear-gradient(135deg, rgba(74, 159, 255, 0.15) 0%, rgba(74, 159, 255, 0.05) 100%) !important;
+        border: 1px solid rgba(74, 159, 255, 0.3) !important;
+        border-top: 5px solid #4a9fff !important;
+        border-radius: 20px !important;
+        padding: 25px !important;
+    }
+    
+    .card-icon { font-size: 2.5rem; }
+    .card-title { font-size: 1.5rem; font-weight: 700; color: #fff; }
+    .card-subtitle { font-size: 0.95rem; color: #888; }
+    
+    .metric-label { font-size: 0.9rem; color: #888; margin-bottom: 5px; }
+    .metric-value { font-size: 2rem; font-weight: 700; font-family: 'Inter', sans-serif; }
+    .metric-value.positive { color: #00d26a; }
+    .metric-value.negative { color: #e94560; }
+    .metric-value.neutral { color: #4a9fff; }
+    
+    .card-footer { 
+        margin-top: 15px; 
+        padding-top: 15px; 
+        border-top: 1px solid rgba(255,255,255,0.1); 
+        font-size: 0.9rem; 
+        color: #666; 
+    }
+    
+    /* 圖表區 */
+    .chart-section {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-radius: 20px !important;
+        padding: 25px !important;
+        margin-top: 30px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
     
     /* 按鈕樣式 */
-    .stButton > button[kind="primary"] {
+    .stButton > button {
         background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%) !important;
+        color: white !important;
         border: none !important;
-        border-radius: 12px !important;
+        padding: 15px 40px !important;
+        font-size: 1.1rem !important;
         font-weight: 600 !important;
+        border-radius: 12px !important;
         transition: all 0.3s ease !important;
+        width: 100% !important;
     }
     
-    .stButton > button[kind="primary"]:hover {
+    .stButton > button:hover {
         transform: translateY(-2px) !important;
         box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4) !important;
     }
     
-    /* 表格樣式 */
-    .stDataFrame {
-        background: rgba(255, 255, 255, 0.03) !important;
-        border-radius: 15px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    }
-    
-    /* 標題區塊 */
-    .stMarkdown h1 {
-        font-family: 'Noto Sans TC', sans-serif !important;
-    }
-    
-    .stMarkdown h2, .stMarkdown h3 {
+    /* 輸入框 */
+    .stNumberInput > div > div > input {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 10px !important;
         color: #fff !important;
-        font-family: 'Noto Sans TC', sans-serif !important;
     }
     
     /* 說明卡片 */
-    .info-section {
+    .info-card {
         background: rgba(255, 255, 255, 0.03);
         border-radius: 15px;
         padding: 20px;
         border: 1px solid rgba(255, 255, 255, 0.1);
-        margin: 10px 0;
     }
     
-    /* 策略卡片顏色 */
-    .card-spider {
-        border-left: 4px solid #e94560 !important;
-        background: linear-gradient(135deg, rgba(233, 69, 96, 0.15) 0%, rgba(233, 69, 96, 0.05) 100%) !important;
-        border-radius: 15px !important;
-        padding: 15px !important;
-    }
+    .info-card h4 { font-size: 1.1rem; margin-bottom: 10px; color: #fff; }
+    .info-card p { color: #888; font-size: 0.9rem; line-height: 1.6; }
     
-    .card-forever {
-        border-left: 4px solid #00d26a !important;
-        background: linear-gradient(135deg, rgba(0, 210, 106, 0.15) 0%, rgba(0, 210, 106, 0.05) 100%) !important;
-        border-radius: 15px !important;
-        padding: 15px !important;
-    }
-    
-    .card-buyhold {
-        border-left: 4px solid #4a9fff !important;
-        background: linear-gradient(135deg, rgba(74, 159, 255, 0.15) 0%, rgba(74, 159, 255, 0.05) 100%) !important;
-        border-radius: 15px !important;
-        padding: 15px !important;
-    }
-    
-    /* Expander 樣式 */
-    .streamlit-expanderHeader {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-radius: 10px !important;
-    }
-    
-    /* 載入動畫 */
-    .stSpinner > div {
-        border-top-color: #e94560 !important;
-    }
+    /* 隱藏側邊欄 */
+    [data-testid="stSidebar"] { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
-# Title - 漸層標題
-st.markdown('<h1 class="gradient-title">🕸️ 蜘蛛網回測系統</h1>', unsafe_allow_html=True)
-st.markdown('<p style="color: #888; font-size: 1.1rem; text-align: center; margin-bottom: 30px;">基於凱利投資原理的固定槓桿再平衡策略</p>', unsafe_allow_html=True)
+# 標題
+st.markdown('<h1 class="gradient-title">📊 三策略比較系統</h1>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">蜘蛛網 vs 永遠做多 vs 買進持有</p>', unsafe_allow_html=True)
 
-# Sidebar
-st.sidebar.header("⚙️ 參數設定")
+# 參數區
+st.markdown('<div class="params-section">', unsafe_allow_html=True)
 
-# 交易模式
-st.sidebar.subheader("📊 交易模式")
-futures_mode = st.sidebar.toggle("期貨模式 (微台指)", value=True)
+col1, col2, col3, col4, col5 = st.columns(5)
 
-if futures_mode:
-    # 期貨合約類型
-    contract_type = st.sidebar.selectbox(
-        "合約類型",
-        options=["微台", "小台", "大台"],
-        index=0
-    )
-    contract_multipliers = {"微台": 10, "小台": 50, "大台": 200}
-    contract_multiplier = contract_multipliers[contract_type]
-    st.sidebar.caption(f"每點 {contract_multiplier} 元")
-    
-    # 期貨手續費
-    futures_fee = st.sidebar.number_input("手續費/口", value=22, step=1)
-else:
-    contract_multiplier = 1
-    futures_fee = 0
+with col1:
+    initial_capital = st.number_input("初始資金", value=1000000, step=100000, format="%d")
 
-st.sidebar.markdown("---")
+with col2:
+    backwardation = st.number_input("逆價差補償 (%/年)", value=4.0, step=0.5, min_value=0.0, max_value=8.0)
 
-# 槓桿設定
-st.sidebar.subheader("⚖️ 槓桿設定")
-kelly_f = st.sidebar.slider(
-    "投資槓桿 f",
-    min_value=0.1,
-    max_value=5.0,
-    value=3.0 if futures_mode else 0.5,
-    step=0.1,
-    help="f < 1: 跌買漲賣 | f = 1: 不動 | f > 1: 追高殺低"
-)
+with col3:
+    spider_f = st.number_input("🕸️ 蜘蛛網 f 值", value=0.5, step=0.1, min_value=0.1, max_value=1.0)
 
-# 槓桿說明
-if kelly_f < 1:
-    st.sidebar.success(f"✅ f = {kelly_f} < 1 → 跌買漲賣（收割正期望報酬）")
-elif kelly_f == 1:
-    st.sidebar.info(f"ℹ️ f = {kelly_f} = 1 → 維持部位不動")
-else:
-    st.sidebar.warning(f"⚠️ f = {kelly_f} > 1 → 追高殺低（類似停損行為）")
+with col4:
+    forever_f = st.number_input("📈 永遠做多槓桿", value=3.0, step=0.5, min_value=1.0, max_value=5.0)
 
-st.sidebar.markdown("---")
+with col5:
+    buyhold_f = st.number_input("🏦 買進持有初始槓桿", value=3.0, step=0.5, min_value=1.0, max_value=5.0)
 
-# 初始資金
-st.sidebar.subheader("💰 資金設定")
-initial_capital = st.sidebar.number_input(
-    "初始資金",
-    min_value=100_000,
-    max_value=100_000_000,
-    value=500_000 if futures_mode else 1_000_000,
-    step=50_000,
-    format="%d"
-)
-
-# 再平衡頻率
-rebalance_freq = st.sidebar.selectbox(
-    "再平衡頻率",
-    options=["daily", "weekly", "monthly"],
-    format_func=lambda x: {"daily": "每日", "weekly": "每週", "monthly": "每月"}[x]
-)
-
-# 交易成本
-include_cost = st.sidebar.checkbox("計入交易成本", value=True)
-if not futures_mode:
-    if include_cost:
-        fee_rate = 0.001425
-        tax_rate = 0.003
-    else:
-        fee_rate = 0
-        tax_rate = 0
-else:
-    fee_rate = 0
-    tax_rate = 0
-
-# 逆價差補償 (台指期特有)
-if futures_mode:
-    include_backwardation = st.sidebar.checkbox(
-        "計入逆價差補償 (4%/年)", 
-        value=True,
-        help="台指期通常有約 3~5% 的年化逆價差，持有期貨可獲得此收益"
-    )
-    backwardation_rate = 0.04 if include_backwardation else 0
-else:
-    backwardation_rate = 0
-
-st.sidebar.markdown("---")
-
-# 資料來源
-data_path = os.path.join(os.path.dirname(__file__), '..', '加權歷史資料.xlsx')
+st.markdown('</div>', unsafe_allow_html=True)
 
 # 執行按鈕
-run_backtest = st.sidebar.button("🚀 執行回測", type="primary", use_container_width=True)
+run_backtest = st.button("🚀 執行比較回測", use_container_width=True)
 
-# Main content
-if run_backtest or 'result' in st.session_state:
+# 資料來源
+data_path = os.path.join(os.path.dirname(__file__), '加權歷史資料.xlsx')
+
+if run_backtest or 'results' in st.session_state:
     
     if run_backtest:
-        # 載入資料並執行回測
-        with st.spinner("載入資料中..."):
-            engine = SpiderWebBacktest(
-                kelly_f=kelly_f,
+        with st.spinner("計算中，請稍候..."):
+            # 策略1: 蜘蛛網
+            engine1 = SpiderWebBacktest(
+                kelly_f=spider_f,
                 initial_capital=initial_capital,
-                rebalance_freq=rebalance_freq,
-                transaction_fee_rate=fee_rate,
-                tax_rate=tax_rate,
-                futures_mode=futures_mode,
-                contract_multiplier=contract_multiplier if futures_mode else 1,
-                futures_fee_per_contract=futures_fee if futures_mode else 0,
-                backwardation_rate=backwardation_rate if futures_mode else 0
+                rebalance_freq='daily',
+                futures_mode=True,
+                contract_multiplier=10,
+                futures_fee_per_contract=22,
+                backwardation_rate=backwardation/100
             )
+            data = engine1.load_data(data_path)
+            r_spider = engine1.run(data)
             
-            try:
-                data = engine.load_data(data_path)
-                result = engine.run(data)
-                st.session_state.result = result
-                st.session_state.kelly_f = kelly_f
-            except Exception as e:
-                st.error(f"回測失敗: {e}")
-                st.stop()
-    else:
-        result = st.session_state.result
+            # 策略2: 永遠做多
+            engine2 = SpiderWebBacktest(
+                kelly_f=forever_f,
+                initial_capital=initial_capital,
+                rebalance_freq='monthly',
+                futures_mode=True,
+                contract_multiplier=10,
+                futures_fee_per_contract=22,
+                backwardation_rate=backwardation/100
+            )
+            r_forever = engine2.run(data)
+            
+            # 策略3: 買進持有
+            engine3 = SpiderWebBacktest(
+                kelly_f=buyhold_f,
+                initial_capital=initial_capital,
+                rebalance_freq='daily',
+                futures_mode=True,
+                contract_multiplier=10,
+                futures_fee_per_contract=22,
+                backwardation_rate=backwardation/100
+            )
+            r_buyhold = engine3.run(data)
+            
+            st.session_state.results = {
+                'spider': r_spider,
+                'forever': r_forever,
+                'buyhold': r_buyhold,
+                'spider_f': spider_f,
+                'forever_f': forever_f,
+                'buyhold_f': buyhold_f
+            }
     
-    # 績效概覽
-    st.header("📊 績效概覽")
+    results = st.session_state.results
+    r_spider = results['spider']
+    r_forever = results['forever']
+    r_buyhold = results['buyhold']
     
-    col1, col2, col3, col4 = st.columns(4)
+    # 三策略卡片
+    col1, col2, col3 = st.columns(3)
     
+    # 蜘蛛網卡片
     with col1:
-        return_pct = result.total_return * 100
-        st.metric(
-            "策略總報酬率",
-            f"{return_pct:+.2f}%",
-            delta=f"vs 買進持有 {(result.total_return - result.buy_hold_return)*100:+.2f}%"
-        )
+        st.markdown(f'''
+        <div class="card-spider">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                <span class="card-icon">🕸️</span>
+                <div>
+                    <div class="card-title">蜘蛛網</div>
+                    <div class="card-subtitle">跌買漲賣</div>
+                </div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <div class="metric-label">總報酬率</div>
+                <div class="metric-value positive">+{r_spider.total_return*100:.2f}%</div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <div class="metric-label">最終資金</div>
+                <div class="metric-value neutral">${r_spider.capitals[-1]:,.0f}</div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <div class="metric-label">最大回撤 (MDD)</div>
+                <div class="metric-value negative">{r_spider.max_drawdown*100:.2f}%</div>
+            </div>
+            <div class="card-footer">f={results['spider_f']}, 每日再平衡</div>
+        </div>
+        ''', unsafe_allow_html=True)
     
+    # 永遠做多卡片
     with col2:
-        st.metric(
-            "年化報酬率",
-            f"{result.annual_return*100:+.2f}%"
-        )
+        st.markdown(f'''
+        <div class="card-forever">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                <span class="card-icon">📈</span>
+                <div>
+                    <div class="card-title">永遠做多</div>
+                    <div class="card-subtitle">再平衡維持槓桿</div>
+                </div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <div class="metric-label">總報酬率</div>
+                <div class="metric-value positive">+{r_forever.total_return*100:.2f}%</div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <div class="metric-label">最終資金</div>
+                <div class="metric-value neutral">${r_forever.capitals[-1]:,.0f}</div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <div class="metric-label">最大回撤 (MDD)</div>
+                <div class="metric-value negative">{r_forever.max_drawdown*100:.2f}%</div>
+            </div>
+            <div class="card-footer">f={results['forever_f']}, 每月再平衡</div>
+        </div>
+        ''', unsafe_allow_html=True)
     
+    # 買進持有卡片
     with col3:
-        st.metric(
-            "最大回撤 (MDD)",
-            f"{result.max_drawdown*100:.2f}%"
-        )
+        st.markdown(f'''
+        <div class="card-buyhold">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                <span class="card-icon">🏦</span>
+                <div>
+                    <div class="card-title">買進持有</div>
+                    <div class="card-subtitle">不再平衡</div>
+                </div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <div class="metric-label">總報酬率</div>
+                <div class="metric-value positive">+{r_buyhold.buy_hold_return*100:.2f}%</div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <div class="metric-label">最終資金</div>
+                <div class="metric-value neutral">${r_buyhold.buy_hold_capitals[-1]:,.0f}</div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <div class="metric-label">最大回撤 (MDD)</div>
+                <div class="metric-value negative">{r_buyhold.buy_hold_mdd*100:.2f}%</div>
+            </div>
+            <div class="card-footer">初始 {results['buyhold_f']}x 槓桿</div>
+        </div>
+        ''', unsafe_allow_html=True)
     
-    with col4:
-        st.metric(
-            "夏普比率",
-            f"{result.sharpe_ratio:.2f}"
-        )
+    # 圖表區
+    st.markdown('<div class="chart-section">', unsafe_allow_html=True)
+    st.markdown("### 📈 資產曲線比較")
     
-    # 對比表格
-    st.markdown(f"### 策略比較 (同為 {kelly_f}x 槓桿)")
-    compare_df = pd.DataFrame({
-        "指標": ["總報酬率", "最終資金"],
-        f"蜘蛛網 ({rebalance_freq})": [
-            f"{result.total_return*100:+.2f}%",
-            f"${result.capitals[-1]:,.0f}"
-        ],
-        f"永遠做多 (月再平衡)": [
-            f"{result.buy_hold_rebal_return*100:+.2f}%",
-            f"${result.buy_hold_rebal_capitals[-1]:,.0f}"
-        ],
-        f"買進持有 (不再平衡)": [
-            f"{result.buy_hold_return*100:+.2f}%",
-            f"${result.buy_hold_capitals[-1]:,.0f}"
-        ]
-    })
-    st.dataframe(compare_df, use_container_width=True, hide_index=True)
+    fig = go.Figure()
     
-    # 策略說明
-    st.caption("💡 蜘蛛網: 依f值調整槓桿 | 永遠做多: 每月再平衡維持固定槓桿 | 買進持有: 初始槓桿後不調整")
+    fig.add_trace(go.Scatter(
+        x=r_spider.dates,
+        y=r_spider.capitals,
+        name='🕸️ 蜘蛛網',
+        line=dict(color='#e94560', width=2)
+    ))
     
-    # 資產曲線圖
-    st.header("📈 資產曲線")
+    fig.add_trace(go.Scatter(
+        x=r_forever.dates,
+        y=r_forever.capitals,
+        name='📈 永遠做多',
+        line=dict(color='#00d26a', width=2)
+    ))
     
-    fig = make_subplots(
-        rows=3, cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.05,
-        subplot_titles=("資產價值", "價格走勢 & 買賣信號", "部位變化"),
-        row_heights=[0.4, 0.35, 0.25]
-    )
-    
-    # 資產曲線
-    fig.add_trace(
-        go.Scatter(
-            x=result.dates,
-            y=result.capitals,
-            name="蜘蛛網策略",
-            line=dict(color="#e94560", width=2)
-        ),
-        row=1, col=1
-    )
-    
-    fig.add_trace(
-        go.Scatter(
-            x=result.dates,
-            y=result.buy_hold_rebal_capitals,
-            name="永遠做多 (月再平衡)",
-            line=dict(color="#00d26a", width=2)
-        ),
-        row=1, col=1
-    )
-    
-    fig.add_trace(
-        go.Scatter(
-            x=result.dates,
-            y=result.buy_hold_capitals,
-            name="買進持有 (不再平衡)",
-            line=dict(color="#4a9fff", width=2, dash="dot")
-        ),
-        row=1, col=1
-    )
-    
-    # 價格 + 買賣信號
-    fig.add_trace(
-        go.Scatter(
-            x=result.dates,
-            y=result.prices,
-            name="價格",
-            line=dict(color="#ffd700", width=1.5)
-        ),
-        row=2, col=1
-    )
-    
-    # 買進信號 (綠色)
-    buy_dates = [result.dates[i] for i in range(len(result.trades)) if result.trades[i] > 100]
-    buy_prices = [result.prices[i] for i in range(len(result.trades)) if result.trades[i] > 100]
-    
-    fig.add_trace(
-        go.Scatter(
-            x=buy_dates,
-            y=buy_prices,
-            mode="markers",
-            name="買進",
-            marker=dict(color="#00d26a", size=6, symbol="triangle-up")
-        ),
-        row=2, col=1
-    )
-    
-    # 賣出信號 (紅色)
-    sell_dates = [result.dates[i] for i in range(len(result.trades)) if result.trades[i] < -100]
-    sell_prices = [result.prices[i] for i in range(len(result.trades)) if result.trades[i] < -100]
-    
-    fig.add_trace(
-        go.Scatter(
-            x=sell_dates,
-            y=sell_prices,
-            mode="markers",
-            name="賣出",
-            marker=dict(color="#ff4757", size=6, symbol="triangle-down")
-        ),
-        row=2, col=1
-    )
-    
-    # 部位變化
-    fig.add_trace(
-        go.Scatter(
-            x=result.dates,
-            y=result.volumes,
-            name="持有部位",
-            fill="tozeroy",
-            line=dict(color="#9b59b6", width=1)
-        ),
-        row=3, col=1
-    )
+    fig.add_trace(go.Scatter(
+        x=r_buyhold.dates,
+        y=r_buyhold.buy_hold_capitals,
+        name='🏦 買進持有',
+        line=dict(color='#4a9fff', width=2)
+    ))
     
     fig.update_layout(
-        height=800,
-        template="plotly_dark",
-        hovermode="x unified",
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        )
+        height=450,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#888', family='Inter, sans-serif', size=14),
+        xaxis=dict(gridcolor='rgba(255,255,255,0.1)'),
+        yaxis=dict(gridcolor='rgba(255,255,255,0.1)', title='資產價值', tickformat=',.0f'),
+        legend=dict(orientation='h', y=1.1, font=dict(size=14)),
+        margin=dict(t=50, b=50, l=80, r=30)
     )
-    
-    fig.update_yaxes(title_text="資金", row=1, col=1)
-    fig.update_yaxes(title_text="價格", row=2, col=1)
-    fig.update_yaxes(title_text="部位", row=3, col=1)
     
     st.plotly_chart(fig, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
-    # 價格 vs 口數 雙軸圖
-    st.header("📊 價格與口數關係圖")
-    st.caption("觀察價格漲跌時，口數如何反向變化（跌買漲賣 or 追高殺低）")
+    # 詳細比較表
+    st.markdown('<div class="chart-section">', unsafe_allow_html=True)
+    st.markdown("### 📋 詳細比較表")
     
-    fig_pv = make_subplots(specs=[[{"secondary_y": True}]])
+    compare_df = pd.DataFrame({
+        "策略": ["🕸️ 蜘蛛網", "📈 永遠做多", "🏦 買進持有"],
+        "槓桿": [f"{results['spider_f']}x", f"{results['forever_f']}x", f"{results['buyhold_f']}x (初始)"],
+        "再平衡": ["每日", "每月", "不再平衡"],
+        "總報酬率": [f"+{r_spider.total_return*100:.2f}%", f"+{r_forever.total_return*100:.2f}%", f"+{r_buyhold.buy_hold_return*100:.2f}%"],
+        "年化報酬": [f"{r_spider.annual_return*100:.2f}%", f"{r_forever.annual_return*100:.2f}%", f"{r_buyhold.buy_hold_annual_return*100:.2f}%"],
+        "MDD": [f"{r_spider.max_drawdown*100:.2f}%", f"{r_forever.max_drawdown*100:.2f}%", f"{r_buyhold.buy_hold_mdd*100:.2f}%"]
+    })
     
-    # 價格曲線 (左軸)
-    fig_pv.add_trace(
-        go.Scatter(
-            x=result.dates,
-            y=result.prices,
-            name="價格",
-            line=dict(color="#ffd700", width=2)
-        ),
-        secondary_y=False
-    )
-    
-    # 口數曲線 (右軸)
-    fig_pv.add_trace(
-        go.Scatter(
-            x=result.dates,
-            y=result.volumes,
-            name="持有口數",
-            line=dict(color="#e94560", width=2)
-        ),
-        secondary_y=True
-    )
-    
-    fig_pv.update_layout(
-        height=400,
-        template="plotly_dark",
-        hovermode="x unified",
-        title="價格↑口數↓ = 跌買漲賣 (f<1) | 價格↑口數↑ = 追高殺低 (f>1)",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02)
-    )
-    
-    fig_pv.update_yaxes(title_text="價格", secondary_y=False, color="#ffd700")
-    fig_pv.update_yaxes(title_text="口數", secondary_y=True, color="#e94560")
-    
-    st.plotly_chart(fig_pv, use_container_width=True)
-    
-    # 交易統計
-    st.header("📋 交易統計")
+    st.dataframe(compare_df, use_container_width=True, hide_index=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+else:
+    # 首頁說明區
+    st.markdown("---")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("總交易次數", f"{result.total_trades:,}")
+        st.markdown('''
+        <div class="info-card">
+            <h4>🕸️ 蜘蛛網策略</h4>
+            <p>• f < 1: 跌買漲賣<br>
+            • 下跌時買進，上漲時賣出<br>
+            • 收割價格波動的正期望報酬<br>
+            • 適合震盪市場</p>
+        </div>
+        ''', unsafe_allow_html=True)
+    
     with col2:
-        st.metric("累計買進單位", f"{result.total_buy_volume:,.0f}")
+        st.markdown('''
+        <div class="info-card">
+            <h4>📈 永遠做多</h4>
+            <p>• 維持固定槓桿<br>
+            • 定期再平衡維持目標槓桿<br>
+            • 上漲時加碼，下跌時減碼<br>
+            • 適合趨勢市場</p>
+        </div>
+        ''', unsafe_allow_html=True)
+    
     with col3:
-        st.metric("累計賣出單位", f"{result.total_sell_volume:,.0f}")
-    
-    # 詳細交易記錄 (可展開)
-    with st.expander("📝 查看詳細交易記錄 (含進出邏輯)"):
-        trade_df = pd.DataFrame({
-            "日期": result.dates,
-            "價格": result.prices,
-            "部位": result.volumes,
-            "買賣": result.trades,
-            "進出邏輯": result.trade_reasons,
-            "資金": result.capitals
-        })
-        
-        # 只顯示有交易的日期
-        trade_df = trade_df[trade_df["買賣"].abs() > 0]
-        trade_df["買賣"] = trade_df["買賣"].apply(lambda x: f"+{int(x)}" if x > 0 else str(int(x)))
-        trade_df["資金"] = trade_df["資金"].apply(lambda x: f"${x:,.0f}")
-        
-        st.dataframe(trade_df, use_container_width=True, hide_index=True)
-
-else:
-    # 首頁說明
-    st.info("👈 請調整左側參數後，點擊「執行回測」按鈕開始")
-    
-    st.markdown("""
-    ## 凱利投資原理
-    
-    | 槓桿 f | 價格變動時的行為 | 說明 |
-    |--------|------------------|------|
-    | **f < 1** | 跌買漲賣 | ✅ 收割正期望報酬率 |
-    | **f = 1** | 不動 | 維持原有部位 |
-    | **f > 1** | 追高殺低 | ⚠️ 類似停損行為 |
-    
-    ---
-    
-    ### 核心公式
-    
-    - **投資金額** = 總資金 × 槓桿 f
-    - **期末資金** = 期初資金 + 部位 × 價差
-    - **調整部位** bs = (f-1) × Δp × q / [p × (1 + f×Δp/p)]
-    
-    當 f < 1 且價格下跌時，bs > 0（買進）  
-    當 f < 1 且價格上漲時，bs < 0（賣出）
-    
-    **這就是為什麼 f < 1 會跌買漲賣！**
-    """)
+        st.markdown('''
+        <div class="info-card">
+            <h4>🏦 買進持有</h4>
+            <p>• 初始槓桿後不調整<br>
+            • 槓桿會隨價格漂移<br>
+            • 上漲後槓桿降低<br>
+            • 最低交易成本</p>
+        </div>
+        ''', unsafe_allow_html=True)
