@@ -21,39 +21,148 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS
+# Custom CSS - Premium Dark Theme (from dashboard.html)
 st.markdown("""
 <style>
-    .metric-card {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        border-radius: 15px;
-        padding: 20px;
-        margin: 10px 0;
-        border: 1px solid #0f3460;
+    /* 匯入 Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Inter:wght@400;600;700&display=swap');
+    
+    /* 全域深色漸層背景 */
+    .stApp {
+        background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%) !important;
     }
-    .metric-value {
-        font-size: 2.5em;
-        font-weight: bold;
-        color: #e94560;
+    
+    /* 主標題漸層色 */
+    .gradient-title {
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
+        background: linear-gradient(90deg, #e94560, #00d26a, #4a9fff) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
     }
-    .metric-label {
-        font-size: 0.9em;
-        color: #a0a0a0;
+    
+    /* Glassmorphism 卡片樣式 */
+    [data-testid="stMetric"], .stMetric {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border-radius: 15px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        padding: 20px !important;
+        transition: all 0.3s ease !important;
     }
+    
+    [data-testid="stMetric"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(233, 69, 96, 0.2);
+    }
+    
+    /* Metric 數值樣式 */
+    [data-testid="stMetricValue"] {
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        font-size: 0.9rem !important;
+        color: #888 !important;
+    }
+    
+    /* 正負值顏色 */
     .positive { color: #00d26a !important; }
     .negative { color: #ff4757 !important; }
-    .stMetric {
-        background: linear-gradient(135deg, #1e1e2f 0%, #252540 100%);
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #3a3a5c;
+    
+    /* 側邊欄樣式 */
+    [data-testid="stSidebar"] {
+        background: rgba(15, 15, 26, 0.95) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    [data-testid="stSidebar"] .stMarkdown h2, 
+    [data-testid="stSidebar"] .stMarkdown h3 {
+        color: #fff !important;
+    }
+    
+    /* 按鈕樣式 */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%) !important;
+        border: none !important;
+        border-radius: 12px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button[kind="primary"]:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4) !important;
+    }
+    
+    /* 表格樣式 */
+    .stDataFrame {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-radius: 15px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    /* 標題區塊 */
+    .stMarkdown h1 {
+        font-family: 'Noto Sans TC', sans-serif !important;
+    }
+    
+    .stMarkdown h2, .stMarkdown h3 {
+        color: #fff !important;
+        font-family: 'Noto Sans TC', sans-serif !important;
+    }
+    
+    /* 說明卡片 */
+    .info-section {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 15px;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 10px 0;
+    }
+    
+    /* 策略卡片顏色 */
+    .card-spider {
+        border-left: 4px solid #e94560 !important;
+        background: linear-gradient(135deg, rgba(233, 69, 96, 0.15) 0%, rgba(233, 69, 96, 0.05) 100%) !important;
+        border-radius: 15px !important;
+        padding: 15px !important;
+    }
+    
+    .card-forever {
+        border-left: 4px solid #00d26a !important;
+        background: linear-gradient(135deg, rgba(0, 210, 106, 0.15) 0%, rgba(0, 210, 106, 0.05) 100%) !important;
+        border-radius: 15px !important;
+        padding: 15px !important;
+    }
+    
+    .card-buyhold {
+        border-left: 4px solid #4a9fff !important;
+        background: linear-gradient(135deg, rgba(74, 159, 255, 0.15) 0%, rgba(74, 159, 255, 0.05) 100%) !important;
+        border-radius: 15px !important;
+        padding: 15px !important;
+    }
+    
+    /* Expander 樣式 */
+    .streamlit-expanderHeader {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 10px !important;
+    }
+    
+    /* 載入動畫 */
+    .stSpinner > div {
+        border-top-color: #e94560 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Title
-st.title("🕸️ 蜘蛛網回測系統")
-st.markdown("**基於凱利投資原理的固定槓桿再平衡策略**")
+# Title - 漸層標題
+st.markdown('<h1 class="gradient-title">🕸️ 蜘蛛網回測系統</h1>', unsafe_allow_html=True)
+st.markdown('<p style="color: #888; font-size: 1.1rem; text-align: center; margin-bottom: 30px;">基於凱利投資原理的固定槓桿再平衡策略</p>', unsafe_allow_html=True)
 
 # Sidebar
 st.sidebar.header("⚙️ 參數設定")

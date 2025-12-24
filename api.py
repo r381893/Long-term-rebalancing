@@ -16,7 +16,7 @@ app = Flask(__name__)
 CORS(app)  # 允許跨域請求
 
 # 資料來源
-DATA_PATH = os.path.join(os.path.dirname(__file__), '..', '加權歷史資料.xlsx')
+DATA_PATH = os.path.join(os.path.dirname(__file__), '加權歷史資料.xlsx')
 DASHBOARD_PATH = os.path.join(os.path.dirname(__file__), 'dashboard.html')
 
 
@@ -164,5 +164,5 @@ def health_check():
 if __name__ == '__main__':
     print("[API] Starting backtest API server...")
     print(f"[API] Data source: {DATA_PATH}")
-    print(f"[API] API URL: http://localhost:5000")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    print(f"[API] API URL: http://localhost:5001")
+    app.run(host='0.0.0.0', port=5001, debug=True)
