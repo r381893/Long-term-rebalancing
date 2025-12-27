@@ -420,11 +420,16 @@ if run_backtest or 'results' in st.session_state:
         height=450,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#888', family='Inter, sans-serif', size=14),
+        font=dict(color='#888', family='Inter, sans-serif', size=12),
         xaxis=dict(gridcolor='rgba(255,255,255,0.1)'),
-        yaxis=dict(gridcolor='rgba(255,255,255,0.1)', title='資產價值', tickformat=',.0f'),
-        legend=dict(orientation='h', y=1.1, font=dict(size=14)),
-        margin=dict(t=50, b=50, l=80, r=30)
+        yaxis=dict(
+            gridcolor='rgba(255,255,255,0.1)', 
+            title='資產價值', 
+            tickformat='.2s',
+            automargin=True
+        ),
+        legend=dict(orientation='h', y=1.1, font=dict(size=12)),
+        margin=dict(t=50, b=50, l=50, r=20)
     )
     
     st.plotly_chart(fig, use_container_width=True)
